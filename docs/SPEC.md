@@ -99,6 +99,12 @@ Comment: post, author, text (1–500), editedAt: Date | null, timestamps
 
 ChatMessage: circle, sender, text (1–1000), timestamps
 
+Event: circle, title, kind ("match" | "premiere" | "book_club" | "watch_party"), startsAt,
+status ("upcoming" | "live" | "ended"), score {home, away, minute} | null, goingCount,
+timestamps. Lab phase: mock data only; real fixtures and live scores come later.
+
+EventAttendance: user, event, timestamps. Unique on { user, event }.
+
 Counters (memberCount, followerCount, followingCount, likeCount, commentCount, hotScore)
 change in the same MongoDB transaction as the record they count, and only when the
 membership/follow/like/comment actually changed.
@@ -170,6 +176,9 @@ Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _i
 | PATCH | /comments/:id | yes | Comment author only; sets editedAt |
 | DELETE | /comments/:id | yes | Comment author OR post author |
 | GET | /search?q=&type=circles\|people\|posts | yes | q is 2–100 chars; paginated |
+| GET | /events/home | yes | → { live, today, thisWeek }: events in the user's circles |
+| POST | /events/:id/going | yes | Idempotent "going"; → { event } |
+| DELETE | /events/:id/going | yes | Idempotent "not going"; → { event } |
 
 Home feed = posts from joined circles, followed users and yourself, newest first. A post
 that matches more than one rule appears once.
@@ -207,8 +216,10 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
 - Local server port: 4001
 
 ## 7. Screens and design
-Mobile-first, snap-inspired direction: activity rings on circles, central create
-button, full-screen live chat, tile-based Explore.
+Mobile-first. Navigation: radial menu on phones (under 768px), icon rail at 768px,
+labelled sidebar at 1280px+. Home is "Matchday": live now, today, this week. Each
+circle opens as a "Circle deck" page with Hot/New posts. Explore keeps the tile layout.
+Event titles are clamped to two lines.
 Screens: Landing (Three.js hero) · Register/Login · Home feed · Explore circles ·
 Circle page (Hot/New posts + live chat) · Post detail with comments · Search (Circles,
 People, Posts) · Profile (+ edit, followers, following) · Settings · 404.
@@ -232,3 +243,10 @@ Responsive targets: 360, 390, 768, 1280+ px.
 | MongoDB text search | Typo tolerance needed | Atlas Search |
 | JWT in localStorage | Need to revoke stolen sessions | Refresh tokens + revocation |
 | Render / Atlas free tiers | Real traffic | Paid plans |
+
+Vision (at scale, not lab scope):
+- Learn mode: a distraction-free, mode for study circles — channels per
+  topic or week, study rooms, progress over popularity, no ranked feed or public likes.
+- Circle tech shop: a marketplace where creators sell their own developer products
+  (UI kits, templates, plugins, starter projects, courses); Circle takes a commission.
+  Open-source tools and other people's documentation are never resold.
