@@ -19,9 +19,13 @@ football, follow other fans, post and discuss in circles, and chat live with oth
    comment on their post
 8. Live circle chat: one real-time chat room per circle, members only
 9. Search: one search bar, results in three tabs — Circles, People, Posts
-10. Settings: account rows, Appearance (System, Light, Dark), log out; rows not built
+10. Member badges: each post and member list shows the author's category-themed
+    tenure badge for that circle (see section 4, Badges and ranks)
+11. Settings: account rows, Appearance (System, Light, Dark), log out; rows not built
     yet are shown disabled with "Coming soon"
-11. Landing page with a Three.js animated hero
+12. Landing page with a Three.js animated hero
+
+
 
 The frontend is built first against a mock API (MSW) that follows section 5 exactly,
 so it connects to the real backend later without rewrites.
@@ -31,6 +35,9 @@ so it connects to the real backend later without rewrites.
 moderation, notifications, stories, reposts, bookmarks, voice notes, video, live rooms,
 GIFs, more niches (e.g. fragrance), refresh tokens and httpOnly-cookie auth, appearance
 saved to the account, external movie/book/football data.
+
+circle ranks (weekly job), activity ranks weighted by likes received, a setting to hide
+your own badges, a consistent cross-device emoji set,
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -119,6 +126,39 @@ hotScore = log10(1 + likeCount + 2 × commentCount) + createdAtSeconds / 45000
   12.5 hours later.
 - The formula lives only in utils/ranking.ts.
 - Home is always chronological; Hot is used on circle pages only.
+
+### Badges and ranks
+Tenure badges (lab phase). Earned per circle, from how long the user has been a member
+of that circle. Computed from Membership.createdAt when read; never stored.
+
+| Tier | Months in circle | Football | Movies | Books |
+|---|---|---|---|---|
+| 0 | under 1 | ⚽ Rookie | 🎟️ Ticket holder | 🔖 First page |
+| 1 | 1+ | 🎽 Starter | 🍿 Regular | 📖 Chapter in |
+| 2 | 6+ | 🧤 Captain | 🎬 Director's cut | 📚 Bookworm |
+| 3 | 12+ | 🏆 Legend | 🌟 Hall of Fame | 🏛️ Librarian |
+
+- Post and member responses include `authorJoinedCircleAt` (ISO date, or null if the
+  author has since left the circle). The client maps it to a tier with one shared
+  ladder constant. Null shows no badge.
+- Leaving and rejoining a circle restarts the tenure from the new join date.
+
+Circle ranks (later). Each circle gets a weekly tier from the number of distinct
+members who posted, commented or chatted in the last 7 days. Distinct members (not
+message counts) so one person cannot inflate a circle's rank.
+
+| Rank | Rule |
+|---|---|
+| 🌱 Growing | Fewer than 10 active members |
+| ⚡ Active | 10+ active members |
+| 🔥 Hot | Top 20% of circles by active members |
+| 👑 Legendary | Top 5% for 4 weeks in a row |
+
+Stored as Circle.rank and Circle.activeMembers7d, recalculated weekly by a scheduled job.
+
+Activity ranks (later). Per-member, per-circle recognition based on likes received,
+capped per day, never on post count. Membership gains postCount and likesReceived,
+updated in the same transaction as the post or like.
 
 ### Indexes
 | Collection | Index | Serves |
@@ -214,6 +254,10 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
   device (localStorage); falls back to System if storage is blocked. Applied before
   the first paint so there is no flash of the wrong theme.
 - Local server port: 4001
+- Badges and ranks never grant permissions; they are recognition only
+- Every badge shows its emoji with a text label, and has an accessible name
+  (e.g. "Captain badge, member for 7 months"); the emoji itself is hidden from screen readers
+- Use only long-established, widely supported emoji, so badges render on older devices
 
 ## 7. Screens and design
 Mobile-first. Navigation: radial menu on phones (under 768px), icon rail at 768px,
@@ -250,3 +294,4 @@ Vision (at scale, not lab scope):
 - Circle tech shop: a marketplace where creators sell their own developer products
   (UI kits, templates, plugins, starter projects, courses); Circle takes a commission.
   Open-source tools and other people's documentation are never resold.
+  | Weekly circle-rank job | Thousands of circles with heavy chat | Daily per-circle activity rollups instead of scanning raw messages |
