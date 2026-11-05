@@ -12,12 +12,12 @@ export function createMockEvents(now: Date): CircleEvent[] {
     return [
         {
             id: "evt-npfl-enyimba-rangers",
-            title: "Enyimba 1-0 Rangers",
+            title: "Enyimba vs Rangers",
             kind: "match",
             status: "live",
             startsAt: shiftFrom(now, -67 * MINUTE_MS),
             circle: {slug: "npfl", name: "NPFL", category: "football" },
-            score: { home: 1, away: 0, minute: 67 },
+            score: { homeTeam: "Enyimba", awayTeam: "Rangers", home:1, away: 0,  minute: 67 },
             goingCount: 342,
             isGoing: false,
         },

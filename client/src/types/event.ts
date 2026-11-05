@@ -9,6 +9,8 @@ export interface CircleSummary {
 }
 
 export interface LiveScore {
+    homeTeam: string;
+    awayTeam: string;
     home: number;
     away: number;
     minute: number;

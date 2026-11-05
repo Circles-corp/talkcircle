@@ -8,7 +8,7 @@ interface SetGoingArgs {
   going: boolean;
 }
 
-interface setGoingResponse {
+interface SetGoingResponse {
   event: CircleEvent;
 }
 
@@ -22,7 +22,7 @@ export const api = createApi({
       query: () => "/events/home",
       providesTags: ["HomeEvents"],
     }),
-    setGoing: build.mutation<setGoingResponse, SetGoingArgs>({
+    setGoing: build.mutation<SetGoingResponse, SetGoingArgs>({
       query: ({ id, going }) => ({
         url: `/events/${encodeURIComponent(id)}/going`,
         method: going ? "POST" : "DELETE",
@@ -49,3 +49,4 @@ export const api = createApi({
     }),
   }),
 });
+export const {useGetHomeEventsQuery, useSetGoingMutation} = api;
