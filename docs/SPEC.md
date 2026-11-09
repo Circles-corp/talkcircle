@@ -5,8 +5,8 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 
 ## 1. Scope
 
-### Beta scope (closed, invite-only)
-1. Auth: register with an invite code, log in, stay logged in, log out
+### Beta scope (friends and family first)
+1. Auth: open registration (email and password), log in, stay logged in, log out
 2. Profile: display name, bio, avatar, follower and following counts; any logged-in user
    can view any profile
 3. Following: follow and unfollow users; followers and following lists
@@ -109,10 +109,6 @@ timestamps. Lab phase: mock data only; real fixtures and live scores come later.
 
 EventAttendance: user, event, timestamps. Unique on { user, event }.
 
-InviteCode: code (unique, uppercase), createdBy, maxUses, useCount, expiresAt | null,
-timestamps. Registration needs a valid, unexpired code with useCount < maxUses; the
-code is claimed with one atomic update so two people cannot use its last slot at once.
-
 Counters (memberCount, followerCount, followingCount, likeCount, commentCount, hotScore)
 change in the same MongoDB transaction as the record they count, and only when the
 membership/follow/like/comment actually changed.
@@ -190,7 +186,7 @@ Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _i
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | /auth/register | no | { inviteCode, username, email, password, displayName } → 201 { user } + session cookie |
+| POST | /auth/register | no | { username, email, password, displayName } → 201 { user } + session cookie |
 | POST | /auth/login | no | → { user } + session cookie (passport-local) |
 | POST | /auth/logout | no | → 204, clears the session cookie (works even if the session already expired) |
 | GET | /auth/me | yes | Current user |
