@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 import { env } from "./env.js";
 
-let listernersAttached = false;
+let listenersAttached = false;
 
 function attachConnectionListeners(): void {
-  if (listernersAttached) {
+  if (listenersAttached) {
     return;
   }
   mongoose.connection.on("disconnected", () => {
@@ -19,7 +19,7 @@ function attachConnectionListeners(): void {
     console.error(`MongoDB connection error: ${error.message}`);
   });
 
-  listernersAttached = true;
+  listenersAttached = true;
 }
 
 export async function connectDB(): Promise<void> {

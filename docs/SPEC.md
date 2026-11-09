@@ -5,8 +5,8 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 
 ## 1. Scope
 
-### Lab Phase (frontend first)
-1. Auth screens: register, log in, stay logged in, log out
+### Beta scope (closed, invite-only)
+1. Auth: register with an invite code, log in, stay logged in, log out
 2. Profile: display name, bio, avatar, follower and following counts; any logged-in user
    can view any profile
 3. Following: follow and unfollow users; followers and following lists
@@ -25,19 +25,16 @@ football, follow other fans, post and discuss in circles, and chat live with oth
     yet are shown disabled with "Coming soon"
 12. Landing page with a Three.js animated hero
 
-
-
 The frontend is built first against a mock API (MSW) that follows section 5 exactly,
 so it connects to the real backend later without rewrites.
 
 ### Later / startup version
 "For you" ranked Home tab, per-category ranking decay, DMs, user-created circles,
 moderation, notifications, stories, reposts, bookmarks, voice notes, video, live rooms,
-GIFs, more niches (e.g. fragrance), refresh tokens and httpOnly-cookie auth, appearance
-saved to the account, external movie/book/football data.
-
-circle ranks (weekly job), activity ranks weighted by likes received, a setting to hide
-your own badges, a consistent cross-device emoji set,
+GIFs, more niches (e.g. fragrance), refresh tokens, appearance saved to the account,
+external movie/book/football data, circle ranks (weekly job), activity ranks weighted
+by likes received, a setting to hide your own badges, a consistent cross-device emoji set.
+See section 10 for the retention roadmap.
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -112,6 +109,10 @@ timestamps. Lab phase: mock data only; real fixtures and live scores come later.
 
 EventAttendance: user, event, timestamps. Unique on { user, event }.
 
+InviteCode: code (unique, uppercase), createdBy, maxUses, useCount, expiresAt | null,
+timestamps. Registration needs a valid, unexpired code with useCount < maxUses; the
+code is claimed with one atomic update so two people cannot use its last slot at once.
+
 Counters (memberCount, followerCount, followingCount, likeCount, commentCount, hotScore)
 change in the same MongoDB transaction as the record they count, and only when the
 membership/follow/like/comment actually changed.
@@ -180,16 +181,18 @@ Seeded circles (scripts/seed.ts, idempotent by slug):
 Movies: Marvel & DC, Nollywood, Hollywood, Bollywood, Anime · Books: African Literature,
 Fantasy & Sci-Fi · Football: Premier League, La Liga, UCL, UEL, NPFL, Super Eagles
 
-## 5. API contract (base /api, JSON, auth = Authorization: Bearer <jwt>)
+## 5. API contract (base /api/v1, JSON, auth = httpOnly session cookie)
+Health lives outside the version at /api/health. A future mobile app sends
+Authorization: Bearer <jwt> instead of the cookie.
 Errors always: { "error": { "code": string, "message": string, "details"?: unknown } }
 Lists are cursor-paginated: ?cursor=<opaque>&limit=<1-20, default 10> → { items, nextCursor }
 Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _id).
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | /health | no | 200 if DB connected, 503 if not |
-| POST | /auth/register | no | → 201 { token, user } |
-| POST | /auth/login | no | → { token, user } (passport-local) |
+| POST | /auth/register | no | { inviteCode, username, email, password, displayName } → 201 { user } + session cookie |
+| POST | /auth/login | no | → { user } + session cookie (passport-local) |
+| POST | /auth/logout | no | → 204, clears the session cookie (works even if the session already expired) |
 | GET | /auth/me | yes | Current user |
 | GET | /users/:username | yes | Public profile with counts and isFollowing |
 | PATCH | /users/me | yes | Update displayName, bio, avatar { publicId } |
@@ -246,9 +249,13 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
   Uploads are limited to the user's own folder, jpeg/png/webp, max 5 MB.
 - Every authenticated response sends Cache-Control: no-store
 - Passwords: min 8 chars, bcrypt cost 12; JWT expiry 7 days
-- JWT stored in localStorage — known limitation; cookie-based auth planned later.
-  On logout the client clears the RTK Query cache.
-- Rate limits: 10/min on /auth/*, 100/min elsewhere; chat 5 messages per 10 s per user
+- JWT is stored in an httpOnly, Secure, SameSite cookie (7 days); page JavaScript can
+  never read it. passport-jwt reads it from the cookie. On logout the server clears the
+  cookie and the client clears the RTK Query cache.
+- The client and the API must be on the same site, or browsers (Safari first) block the
+  cookie: Vercel rewrites /api/* to the Render server, or both use one custom domain
+  (app.<domain> and api.<domain>).
+- Rate limits: 10/min on /api/v1/auth/*, 100/min elsewhere; chat 5 messages per 10 s per user
 - Search: debounced 300 ms on the client; query text is never used as a raw regex
 - Appearance: System (follows the device), Light or Dark; default System. Saved on the
   device (localStorage); falls back to System if storage is blocked. Applied before
@@ -285,14 +292,75 @@ Responsive targets: 360, 390, 768, 1280+ px.
 | Hot tab pagination | Very active circles reorder quickly | Snapshot scores per scroll session |
 | Likes and comments as ranking signals | Fake accounts inflate scores | Abuse detection, weighting trusted accounts |
 | MongoDB text search | Typo tolerance needed | Atlas Search |
-| JWT in localStorage | Need to revoke stolen sessions | Refresh tokens + revocation |
+| 7-day JWT cookie sessions | A stolen session must be cut off before it expires | Refresh tokens + server-side revocation |
 | Render / Atlas free tiers | Real traffic | Paid plans |
+| Weekly circle-rank job | Thousands of circles with heavy chat | Daily per-circle activity rollups instead of scanning raw messages |
+| Rate limiting by IP | Many mobile users share one carrier IP | Limit logged-in users by user id |
 
-Vision (at scale, not lab scope):
-- Learn mode: a distraction-free, mode for study circles — channels per
+## 9. Vision (at scale)
+- Learn mode: a distraction-free mode for study circles — channels per
   topic or week, study rooms, progress over popularity, no ranked feed or public likes.
 - Circle tech shop: a marketplace where creators sell their own developer products
   (UI kits, templates, plugins, starter projects, courses); Circle takes a commission.
   Open-source tools and other people's documentation are never resold.
-  | Weekly circle-rank job | Thousands of circles with heavy chat | Daily per-circle activity rollups instead of scanning raw messages |
-  extremely laser focused, users interest algorithim machine. content retention mechanism, activity algorithim enforcing of feeds algorithim. to ensure users interest retention on the app 
+
+## 10. Content and retention
+
+Principle: content comes first, then activity, then the algorithm. A ranking algorithm
+can only sort what exists, using behaviour history the beta does not have yet.
+North-star metric: % of weekly active users attending at least one event per week.
+We optimise for coming back (matchday attendance, predictions streaks), never for raw
+time in the app or for outrage.
+
+### Content sources
+| Source | What | Who |
+|---|---|---|
+| Programmed | Weekly prompts, events, polls, predictions | Team (the backbone in the beta) |
+| User posts | Takes, reactions, ratings | Members |
+| Data-driven | Fixtures, scores, leaderboards, result cards | Automatic (NPFL entered by hand in the beta) |
+| Hosts | Shows, later Circle Radio | Media partners |
+
+### Weekly rhythm (football-first beta, Lagos time)
+| Day | Content |
+|---|---|
+| Mon | Player ratings recap, Team of the Week vote |
+| Tue | Hot Take Tuesday prompt per circle |
+| Wed | Midweek fixtures in live rooms |
+| Thu | Predictions open for weekend fixtures |
+| Fri | Friday Night Takes (app-wide ritual); new movie releases thread |
+| Sat | Matchday: live rooms, predictions lock at kickoff, Man of the Match vote, ratings at full time |
+| Sun | Matchday; predictions league results and leaderboard |
+| Daily | One pinned Question of the day per circle |
+
+Owner of daily content in the beta: to confirm (about 30 minutes a day).
+
+### Feed algorithm phases
+| Phase | When | Feed |
+|---|---|---|
+| 0 | Beta | Circle: Hot and New. Home: your circles' events, then posts by recency |
+| 1 | 500+ active users | Weighted interest score: circles joined, follows, likes, ratings, predictions, events attended |
+| 2 | Thousands of users | Personalised "For you" feed with "Why am I seeing this?" and "Show me less" |
+| 3 | Real scale | Learned ranking model with safety checks and limits on amplifying conflict |
+
+### Content rules
+- Spoiler tags are required for movies and books
+- No piracy links; they are removed
+- No betting promotion (to confirm)
+- Report, block and remove from day one; clear community rules
+
+### Retention roadmap (after the beta)
+1. Share cards for WhatsApp, predictions league, player ratings, Friday Night Takes,
+   event-attendance ranks, derby week, circles near you
+2. Chapter-paced reading, spoiler-synced reactions, premiere countdown rooms, creator sessions
+3. Voice-note posts (find the natural hosts)
+4. Circle Radio, talk-only: a station per circle, programme schedule, Matchday Radio,
+   call-in hour, host ranks (LiveKit; host tools; legal checks before launch)
+
+### Circles near you
+- Circle scope: global | national | local; local circles have a public-venue location
+  and an area label, never a home address
+- User location by consent, else a chosen city or area; store the area only
+- Never list nearby people, only circles and events
+- Rank by area (Island/Mainland, then LGA), 7-day activity and followed categories
+- Consent, opt-out and deletion follow the Nigeria Data Protection Act 2023 and, for
+  UK users, UK GDPR

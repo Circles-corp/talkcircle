@@ -121,7 +121,7 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  const message = error instanceof Error ? error.message : "Uknown error";
+  const message = error instanceof Error ? error.message : "Unknown error";
   const stack = error instanceof Error ? error.stack : undefined;
   console.error(`Unhandled error: ${message}`);
   if (stack !== undefined) {
