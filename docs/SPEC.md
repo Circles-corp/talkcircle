@@ -295,3 +295,4 @@ Vision (at scale, not lab scope):
   (UI kits, templates, plugins, starter projects, courses); Circle takes a commission.
   Open-source tools and other people's documentation are never resold.
   | Weekly circle-rank job | Thousands of circles with heavy chat | Daily per-circle activity rollups instead of scanning raw messages |
+  extremely laser focused, users interest algorithim machine. content retention mechanism, activity algorithim enforcing of feeds algorithim. to ensure users interest retention on the app 

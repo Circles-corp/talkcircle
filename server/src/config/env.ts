@@ -22,7 +22,7 @@ function loadEnv(): Env {
       return ` -${variableName}: ${issue.message}`;
     });
 
-    console.error("invalid environment configuration. Fix server/.env:");
+    console.error("Invalid environment configuration. Fix server/.env:");
     console.error(problems.join("\n"));
     process.exit(1);
   }

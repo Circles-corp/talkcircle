@@ -49,4 +49,4 @@ export const api = createApi({
     }),
   }),
 });
-export const {useGetHomeEventsQuery, useSetGoingMutation} = api;
+export const { useGetHomeEventsQuery, useSetGoingMutation } = api;

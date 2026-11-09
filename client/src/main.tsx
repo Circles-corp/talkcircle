@@ -14,7 +14,8 @@ if (rootElement === null) {
 }
 
 async function enableMocking(): Promise<void> {
-  const useMocks = import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS === "true";
+  const useMocks =
+    import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS === "true";
   if (!useMocks) {
     return;
   }

@@ -1,4 +1,11 @@
-import { Compass, House, MessageCircle, Plus, User, type LucideIcon } from "lucide-react";
+import {
+  Compass,
+  House,
+  MessageCircle,
+  Plus,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import { ROUTES } from "../../app/routes.ts";
 
 export interface NavItem {

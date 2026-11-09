@@ -28,13 +28,34 @@ export const router = createBrowserRouter([
       {
         Component: AppLayout,
         children: [
-          { path: ROUTES.home, lazy: () => loadPage(() => import("../pages/HomePage.tsx")) },
-          { path: ROUTES.explore, lazy: () => loadPage(() => import("../pages/ExplorePage.tsx")) },
-          { path: ROUTES.create, lazy: () => loadPage(() => import("../pages/CreatePostPage.tsx")) },
-          { path: ROUTES.chats, lazy: () => loadPage(() => import("../pages/ChatsPage.tsx")) },
-          { path: ROUTES.profile, lazy: () => loadPage(() => import("../pages/MyProfilePage.tsx")) },
-          { path: ROUTES.userProfile, lazy: () => loadPage(() => import("../pages/ProfilePage.tsx")) },
-          { path: ROUTES.search, lazy: () => loadPage(() => import("../pages/SearchPage.tsx")) },
+          {
+            path: ROUTES.home,
+            lazy: () => loadPage(() => import("../pages/HomePage.tsx")),
+          },
+          {
+            path: ROUTES.explore,
+            lazy: () => loadPage(() => import("../pages/ExplorePage.tsx")),
+          },
+          {
+            path: ROUTES.create,
+            lazy: () => loadPage(() => import("../pages/CreatePostPage.tsx")),
+          },
+          {
+            path: ROUTES.chats,
+            lazy: () => loadPage(() => import("../pages/ChatsPage.tsx")),
+          },
+          {
+            path: ROUTES.profile,
+            lazy: () => loadPage(() => import("../pages/MyProfilePage.tsx")),
+          },
+          {
+            path: ROUTES.userProfile,
+            lazy: () => loadPage(() => import("../pages/ProfilePage.tsx")),
+          },
+          {
+            path: ROUTES.search,
+            lazy: () => loadPage(() => import("../pages/SearchPage.tsx")),
+          },
         ],
       },
       {

@@ -3,10 +3,11 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import { api } from "./api.ts";
 
 export const store = configureStore({
-    reducer: {
-        [api.reducerPath]: api.reducer,
-    },
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
+  reducer: {
+    [api.reducerPath]: api.reducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(api.middleware),
 });
 
 setupListeners(store.dispatch);

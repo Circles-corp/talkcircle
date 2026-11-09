@@ -17,11 +17,17 @@ function isSameDay(first: Date, second: Date): boolean {
   );
 }
 
-function groupForHome(allEvents: readonly CircleEvent[], now: Date): HomeEvents {
+function groupForHome(
+  allEvents: readonly CircleEvent[],
+  now: Date,
+): HomeEvents {
   const weekEnd = now.getTime() + 7 * DAY_MS;
   const upcoming = allEvents
     .filter((event) => event.status === "upcoming")
-    .sort((first, second) => Date.parse(first.startsAt) - Date.parse(second.startsAt));
+    .sort(
+      (first, second) =>
+        Date.parse(first.startsAt) - Date.parse(second.startsAt),
+    );
 
   return {
     live: allEvents.filter((event) => event.status === "live"),
@@ -61,6 +67,10 @@ export const handlers = [
     await delay(400);
     return HttpResponse.json(groupForHome(events, new Date()));
   }),
-  http.post<EventParams>("/api/events/:id/going", ({ params }) => setGoing(params.id, true)),
-  http.delete<EventParams>("/api/events/:id/going", ({ params }) => setGoing(params.id, false)),
+  http.post<EventParams>("/api/events/:id/going", ({ params }) =>
+    setGoing(params.id, true),
+  ),
+  http.delete<EventParams>("/api/events/:id/going", ({ params }) =>
+    setGoing(params.id, false),
+  ),
 ];

@@ -54,7 +54,14 @@ export function JoinButton({ event, variant }: JoinButtonProps): JSX.Element {
         {buttonLabel(event)}
       </button>
       {hasError ? (
-        <p role="alert" className={variant === "onAccent" ? "text-xs text-on-accent" : "text-xs text-danger"}>
+        <p
+          role="alert"
+          className={
+            variant === "onAccent"
+              ? "text-xs text-on-accent"
+              : "text-xs text-danger"
+          }
+        >
           Couldn't update. Try again.
         </p>
       ) : null}

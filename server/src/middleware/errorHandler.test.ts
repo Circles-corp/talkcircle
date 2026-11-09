@@ -27,7 +27,7 @@ function buildTestApp(): Express {
     throw new mongoose.Error.CastError("ObjectId", "abc", "_id");
   });
 
-  app.get("/mongoose-validation-error", async() => {
+  app.get("/mongoose-validation-error", async () => {
     const document = new SampleModel({ bio: "far too long" });
     await document.validate();
     const validationError = document.validateSync();
@@ -37,9 +37,12 @@ function buildTestApp(): Express {
   });
 
   app.get("/duplicate-key", () => {
-    throw Object.assign(new Error('E11000 duplicate key error: { email: "ada@example.com" }'), {
-      code: 11000,
-    });
+    throw Object.assign(
+      new Error('E11000 duplicate key error: { email: "ada@example.com" }'),
+      {
+        code: 11000,
+      },
+    );
   });
 
   app.post("/echo", (_req, res) => {
@@ -68,22 +71,32 @@ describe("errorHandler", () => {
   });
 
   it("returns a 404 in the standard shape for unknown routes", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const response = await request(app).get("/does-not-exist");
-    expect (errorSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
-      error: { code: "NOT_FOUND", message: "Route GET /does-not-exist not found" },
+      error: {
+        code: "NOT_FOUND",
+        message: "Route GET /does-not-exist not found",
+      },
     });
   });
 
   it("keeps the status and code of an AppError", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const response = await request(app).get("/app-error");
     expect(errorSpy).not.toHaveBeenCalled();
     expect(response.status).toBe(403);
     expect(response.body).toEqual({
-      error: { code: "FORBIDDEN", message: "You can only edit your own comments" },
+      error: {
+        code: "FORBIDDEN",
+        message: "You can only edit your own comments",
+      },
     });
   });
 
@@ -115,7 +128,10 @@ describe("errorHandler", () => {
     const response = await request(app).get("/duplicate-key");
     expect(response.status).toBe(409);
     expect(response.body).toEqual({
-      error: { code: "CONFLICT", message: "A record with these details already exists" },
+      error: {
+        code: "CONFLICT",
+        message: "A record with these details already exists",
+      },
     });
     expect(JSON.stringify(response.body)).not.toContain("ada@example.com");
   });
@@ -127,20 +143,30 @@ describe("errorHandler", () => {
       .send('{"text": ');
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: { code: "INVALID_JSON", message: "Request body is not valid JSON" },
+      error: {
+        code: "INVALID_JSON",
+        message: "Request body is not valid JSON",
+      },
     });
   });
 
   it("rejects an oversized body with a 413", async () => {
-    const response = await request(app).post("/echo").send({ text: "x".repeat(2000) });
+    const response = await request(app)
+      .post("/echo")
+      .send({ text: "x".repeat(2000) });
     expect(response.status).toBe(413);
     expect(response.body).toEqual({
-      error: { code: "PAYLOAD_TOO_LARGE", message: "Request body is too large" },
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
+        message: "Request body is too large",
+      },
     });
   });
 
   it("turns an unexpected error into a 500 and logs it", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const response = await request(app).get("/sync-bug");
     expect(response.status).toBe(500);
     expect(response.body).toEqual({

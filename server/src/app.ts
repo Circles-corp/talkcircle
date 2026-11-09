@@ -5,6 +5,8 @@ import { isDBConnected } from "./config/db.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { createRequestLogger } from "./middleware/requestLogger.js";
+import { v1Router } from "./routes/v1.js";
 
 const noStore: RequestHandler = (_req, res, next) => {
   res.set("Cache-control", "no-store");
@@ -32,6 +34,12 @@ if (env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
+app.use(
+  createRequestLogger({
+    enabled: env.NODE_ENV !== "test",
+    skipPaths: ["/api/health"],
+  }),
+);
 app.use(helmet());
 app.use(cors({ origin: env.CLIENT_ORIGIN }));
 app.use(express.json({ limit: "1mb" }));
@@ -40,13 +48,17 @@ app.use("/api", noStore);
 app.get("/api/health", healthCheck);
 
 app.get("/", (_req, res) => {
-  res
-    .status(200)
-    .json({ name: "Circle API", status: "running", health: "/api/health" });
+  res.status(200).json({
+    name: "Circle API",
+    status: "running",
+    health: "/api/health",
+    api: "/api/v1",
+  });
 });
 
 app.use("/api", apiLimiter);
-app.use("/api/auth", authLimiter);
+app.use("/api/v1/auth", authLimiter);
+app.use("/api/v1", v1Router);
 
 app.use(notFound);
 app.use(errorHandler);

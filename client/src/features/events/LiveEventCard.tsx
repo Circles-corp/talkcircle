@@ -9,7 +9,10 @@ interface LiveEventCardProps {
 
 export function LiveEventCard({ event }: LiveEventCardProps): JSX.Element {
   const minute = event.score === null ? null : `${String(event.score.minute)}'`;
-  const details = minute === null ? attendanceLabel(event) : `${minute} · ${attendanceLabel(event)}`;
+  const details =
+    minute === null
+      ? attendanceLabel(event)
+      : `${minute} · ${attendanceLabel(event)}`;
 
   return (
     <article className="flex flex-col gap-2 rounded-card bg-accent p-5 text-on-accent">
@@ -17,7 +20,9 @@ export function LiveEventCard({ event }: LiveEventCardProps): JSX.Element {
         <span aria-hidden="true" className="size-2 rounded-full bg-live" />
         Live · {event.circle.name}
       </p>
-      <h2 className="font-display text-2xl leading-tight font-bold">{displayTitle(event)}</h2>
+      <h2 className="font-display text-2xl leading-tight font-bold">
+        {displayTitle(event)}
+      </h2>
       <p className="text-sm text-on-accent/70">{details}</p>
       <div className="mt-2">
         <JoinButton event={event} variant="onAccent" />
@@ -31,7 +36,10 @@ interface NothingLiveCardProps {
   now: Date;
 }
 
-export function NothingLiveCard({ nextEvent, now }: NothingLiveCardProps): JSX.Element {
+export function NothingLiveCard({
+  nextEvent,
+  now,
+}: NothingLiveCardProps): JSX.Element {
   return (
     <article className="flex flex-col gap-1 rounded-card bg-surface p-5">
       <h2 className="font-display text-lg font-bold">Nothing live right now</h2>
