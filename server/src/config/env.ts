@@ -9,9 +9,11 @@ const envSchema = z.object({
   MONGODB_URI: z.string().startsWith("mongodb"),
   CLIENT_ORIGIN: z.url(),
   JWT_SECRET: z.string().min(32),
+  REGISTRATION_MODE: z.enum(["invite", "open"]).default("invite"),
 });
 
 export type Env = z.infer<typeof envSchema>;
+export type RegistrationMode = Env["REGISTRATION_MODE"];
 
 function loadEnv(): Env {
   const result = envSchema.safeParse(process.env);
