@@ -380,7 +380,7 @@ live feature that enables users ask creators questions about their content it no
 |---|---|
 | Beta | Preset 3D avatars (four characters); mutuals shown automatically |
 | After the beta | Friend requests, close friends, choosing who sees a post |
-| Growth | Wardrobe on one shared base body; shop on the website first |
+| Growth | Wardrobe on one shared base body; outfit schedule; shop on the website first |
 | Later | Paid craft models on profiles |
 
 ### Avatars
@@ -399,6 +399,22 @@ live feature that enables users ask creators questions about their content it no
   account for this
 - An item is owned only after the payment provider confirms it to the server (webhook),
   never because the app says so
+
+### Outfit schedule (with the wardrobe)
+- Styles are not limited to careers: career, casual, native, gym, matchday, and more from
+  the shop (night out, owambe aso-ebi, church or Jumu'ah wear, rainy season, holidays)
+- Auto rules by default: Monday to Friday career, Saturday casual, Sunday native.
+  Matchday kit (on by default) replaces the day's outfit when the user's team plays
+- The user can override any day; "Auto" hands the day back to the rules. With Auto off,
+  one chosen outfit is worn all week
+- The day is the owner's day, in the time zone saved on their account; viewers in other
+  time zones see the owner's outfit for the owner's day
+- Only owned items can be scheduled. If an item is refunded or removed, that day falls
+  back to a free default outfit
+- The schedule (seven day slots plus overrides) is stored on the server. Each outfit gets
+  one small still image (at most seven per user), rendered again only when the schedule
+  changes; feeds never render 3D per viewer
+- Matchday switching depends on fixture data (entered by hand for the NPFL in the beta)
 
 ### Crafts (paid, open to every user who pays)
 - Profile line: "Create your custom designs to connect with members, and display your
