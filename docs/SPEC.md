@@ -6,7 +6,7 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 ## 1. Scope
 
 ### Beta scope (friends and family first)
-1. Auth: open registration (email and password), log in, stay logged in, log out
+1. Auth: register (invite code while REGISTRATION_MODE=invite), log in, stay logged in, log out
 2. Profile: display name, bio, avatar, follower and following counts; any logged-in user
    can view any profile
 3. Following: follow and unfollow users; followers and following lists
@@ -34,7 +34,8 @@ moderation, notifications, stories, reposts, bookmarks, voice notes, video, live
 GIFs, more niches (e.g. fragrance), refresh tokens, appearance saved to the account,
 external movie/book/football data, circle ranks (weekly job), activity ranks weighted
 by likes received, a setting to hide your own badges, a consistent cross-device emoji set.
-See section 10 for the retention roadmap.
+See section 10 for the retention roadmap and section 11 for avatars, the wardrobe
+shop, crafts and friendships.
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -108,6 +109,11 @@ status ("upcoming" | "live" | "ended"), score {home, away, minute} | null, going
 timestamps. Lab phase: mock data only; real fixtures and live scores come later.
 
 EventAttendance: user, event, timestamps. Unique on { user, event }.
+
+InviteCode: code (unique, uppercase), createdBy | null, maxUses, useCount, expiresAt | null,
+timestamps. A use is claimed with one atomic update (useCount < maxUses and not expired),
+so two people cannot take the last slot at once; it is given back if the account
+cannot be created.
 
 Counters (memberCount, followerCount, followingCount, likeCount, commentCount, hotScore)
 change in the same MongoDB transaction as the record they count, and only when the
@@ -186,7 +192,8 @@ Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _i
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | /auth/register | no | { username, email, password, displayName } → 201 { user } + session cookie |
+| GET | /auth/registration | no | → { mode: "invite" \| "open" } so the client knows whether to ask for a code |
+| POST | /auth/register | no | { inviteCode?, username, email, password, displayName } → 201 { user } + session cookie |
 | POST | /auth/login | no | → { user } + session cookie (passport-local) |
 | POST | /auth/logout | no | → 204, clears the session cookie (works even if the session already expired) |
 | GET | /auth/me | yes | Current user |
@@ -244,7 +251,10 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
 - Images go browser → Cloudinary directly; the server never holds image data in memory.
   Uploads are limited to the user's own folder, jpeg/png/webp, max 5 MB.
 - Every authenticated response sends Cache-Control: no-store
-- Passwords: min 8 chars, bcrypt cost 12; JWT expiry 7 days
+- Passwords: min 8 chars and at most 72 bytes (bcrypt's limit), bcrypt cost 12; JWT expiry 7 days
+- Registration mode (REGISTRATION_MODE env, default invite): invite = a valid code is
+  required; open = anyone can register, and a valid code is still counted (to see which
+  partner or group brought people in) but an invalid one never blocks sign-up
 - JWT is stored in an httpOnly, Secure, SameSite cookie (7 days); page JavaScript can
   never read it. passport-jwt reads it from the cookie. On logout the server clears the
   cookie and the client clears the RTK Query cache.
@@ -360,3 +370,53 @@ Owner of daily content in the beta: to confirm (about 30 minutes a day).
 - Rank by area (Island/Mainland, then LGA), 7-day activity and followed categories
 - Consent, opt-out and deletion follow the Nigeria Data Protection Act 2023 and, for
   UK users, UK GDPR
+
+live feature that enables users ask creators questions about their content it notifies creator instantly could be a post on anything
+
+## 11. Identity: avatars, wardrobe, crafts and friendships
+
+### Phases
+| Phase | What |
+|---|---|
+| Beta | Preset 3D avatars (four characters); mutuals shown automatically |
+| After the beta | Friend requests, close friends, choosing who sees a post |
+| Growth | Wardrobe on one shared base body; shop on the website first |
+| Later | Paid craft models on profiles |
+
+### Avatars
+- Style: soft clay-like 3D, slim body, slightly large head, matte pastel materials
+- Kits are plain colours: no real club crests, sponsor logos or text
+- Live 3D only on the profile and the avatar editor; feeds, comments and member lists
+  show a small still image rendered from the avatar
+- Each model is compressed glTF (GLB) under 1 MB; kit colour is changed in code
+
+### Wardrobe and shop
+- Outfits across careers: sport kits, medical, chef, legal, trades, aviation and more
+- One shared base body; every garment is modelled separately to fit it (needs a 3D
+  artist; an image-to-3D tool alone produces one-piece characters)
+- Website purchases use Paystack or Flutterwave. Digital items sold inside the iPhone and
+  Android apps must use Apple and Google in-app purchase (15-30% commission); prices
+  account for this
+- An item is owned only after the payment provider confirms it to the server (webhook),
+  never because the app says so
+
+### Crafts (paid, open to every user who pays)
+- Profile line: "Create your custom designs to connect with members, and display your
+  crafts in 3D"
+- A user uploads photos of their work; the server turns them into a small 3D model with a
+  paid image-to-3D service. Payment is taken before generation; daily limit per user
+- Every model is checked before it is public (automatic check plus reports): no nudity,
+  no copies of brands or other people's work. The owner keeps the rights to their craft;
+  Circle gets a licence to display it
+- Stored as a compressed GLB plus a still image; the 3D loads only when tapped
+
+### Friendships
+- Following: one-way, no approval (as today)
+- Mutuals: automatic when two people follow each other
+- Friends: a request the other person accepts or declines. Either can unfriend; the
+  sender can cancel a pending request; if both send a request to each other, it becomes
+  a friendship. Blocked users cannot send requests; pending requests are rate-limited
+- Close friends: a private list chosen from your friends. Nobody can see whether they are
+  on it or not. Used to choose who sees a post
+- Models: Friendship { userA, userB (stored in a fixed order so each pair is unique),
+  requestedBy, status ("pending" | "accepted"), timestamps }; CloseFriend { owner, friend }
