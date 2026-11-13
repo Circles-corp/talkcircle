@@ -65,22 +65,28 @@ talkcircle/
       types/
   server/
     src/
-      config/         env.ts, db.ts, passport.ts
-      models/         <name>.model.ts
-      repositories/   <name>.repository.ts   (the only layer that talks to MongoDB)
-      services/       <name>.service.ts      (business rules and permission checks)
-      controllers/    <name>.controller.ts   (validate input, call service, respond)
-      routes/         <name>.routes.ts
-      validators/     <name>.schemas.ts      (Zod)
-      middleware/     errorHandler, rateLimit, requireAuth
+      modules/        one folder per business area: users, invites, auth (circles, posts,
+                      events, chat, notifications are added as they are built)
+        <name>/
+          index.ts          the module's public interface: the only file other code imports
+          <name>.routes.ts, <name>.controller.ts, <name>.service.ts, <name>.schemas.ts
+          <entity>.repository.ts, <entity>.model.ts, <name>.types.ts
+      shared/
+        config/       env.ts, db.ts
+        middleware/   errorHandler, rateLimit, requestLogger
+        utils/        AppError.ts, pagination.ts, ranking.ts
+      routes/v1.ts    mounts each module's router
       socket/         chat handlers
-      utils/          AppError.ts, pagination.ts, ranking.ts
-      scripts/        seed.ts, checkDb.ts
+      scripts/        seed.ts, checkDb.ts, createInvite.ts
       app.ts
       server.ts
 ```
-Boundary rule: a service calls only its own repository. If it needs another domain's
-data, it calls that domain's service.
+Architecture: a modular monolith (one app, one deployment, walls between business areas).
+Boundary rules, enforced by ESLint `no-restricted-imports`:
+- Other code imports a module only through its `index.ts`.
+- Only a module's own repository reads or writes its collections; other modules call its
+  service through `index.ts`.
+- `shared/` never imports from `modules/`.
 
 ## 4. Data models
 User: username (unique, lowercase, 3–20, a-z 0-9 _), email (unique, lowercase),
