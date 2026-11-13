@@ -384,6 +384,8 @@ live feature that enables users ask creators questions about their content it no
 | Later | Paid craft models on profiles |
 
 ### Avatars
+- Optional: each user chooses a real profile photo or a 3D avatar, and can switch at
+  any time; both use the same profile layout
 - Style: soft clay-like 3D, slim body, slightly large head, matte pastel materials
 - Kits are plain colours: no real club crests, sponsor logos or text
 - Live 3D only on the profile and the avatar editor; feeds, comments and member lists
