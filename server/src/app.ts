@@ -1,11 +1,11 @@
 import cors from "cors";
 import express, { type Express, type RequestHandler } from "express";
 import helmet from "helmet";
-import { isDBConnected } from "./config/db.js";
-import { env } from "./config/env.js";
-import { errorHandler, notFound } from "./middleware/errorHandler.js";
-import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
-import { createRequestLogger } from "./middleware/requestLogger.js";
+import { isDBConnected } from "./shared/config/db.js";
+import { env } from "./shared/config/env.js";
+import { errorHandler, notFound } from "./shared/middleware/errorHandler.js";
+import { apiLimiter, authLimiter } from "./shared/middleware/rateLimit.js";
+import { createRequestLogger } from "./shared/middleware/requestLogger.js";
 import { v1Router } from "./routes/v1.js";
 
 const noStore: RequestHandler = (_req, res, next) => {

@@ -1,11 +1,11 @@
 import { Types } from "mongoose";
-import { UserModel, type UserRecord } from "../models/user.model.js";
+import { UserModel, type UserRecord } from "./user.model.js";
 import type {
   DuplicateUserField,
   NewUser,
   PublicUser,
   UserCredentials,
-} from "../types/user.js";
+} from "./user.types.js";
 
 type LeanUser = UserRecord & { _id: Types.ObjectId };
 
@@ -43,7 +43,7 @@ export async function findCredentialsByEmail(
   return { user: toPublicUser(user), passwordHash: user.passwordHash };
 }
 
-export async function createUser(input: NewUser): Promise<PublicUser> {
+export async function insertUser(input: NewUser): Promise<PublicUser> {
   const created = await UserModel.create(input);
   return toPublicUser(created.toObject<LeanUser>());
 }

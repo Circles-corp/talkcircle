@@ -1,7 +1,7 @@
 import type { Server } from "node:http";
 import { app } from "./app.js";
-import { connectDB, disconnectDB } from "./config/db.js";
-import { env } from "./config/env.js";
+import { connectDB, disconnectDB } from "./shared/config/db.js";
+import { env } from "./shared/config/env.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 

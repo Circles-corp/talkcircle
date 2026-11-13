@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "./app.js";
-import { env } from "./config/env.js";
+import { env } from "./shared/config/env.js";
 
 describe("app", () => {
   it("reports 503 on /api/health when the database is not connected", async () => {

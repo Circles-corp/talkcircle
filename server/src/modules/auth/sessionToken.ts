@@ -1,6 +1,6 @@
 import type { CookieOptions } from "express";
 import jwt from "jsonwebtoken";
-import { env } from "../config/env.js";
+import { env } from "../../shared/config/env.js";
 
 export const SESSION_COOKIE_NAME = "circle_session";
 
@@ -11,7 +11,7 @@ const baseCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
   sameSite: "lax",
-  path: "/,",
+  path: "/",
 };
 
 export const sessionCookieOptions: CookieOptions = {

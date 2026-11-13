@@ -33,7 +33,7 @@ export async function connectDB(): Promise<void> {
     });
     console.info(`MongoDB connected: ${instance.connection.host}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknfown error";
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error(`MongoDB initial connection failed: ${message}`);
     throw error;
   }

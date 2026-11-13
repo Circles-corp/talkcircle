@@ -1,4 +1,4 @@
-import { InviteCodeModel } from "../models/inviteCode.model.js";
+import { InviteCodeModel } from "./inviteCode.model.js";
 
 export interface NewInviteCode {
   code: string;
