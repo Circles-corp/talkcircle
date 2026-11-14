@@ -1,6 +1,8 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type Express, type RequestHandler } from "express";
 import helmet from "helmet";
+import { passport } from "./modules/auth/index.js";
 import { isDBConnected } from "./shared/config/db.js";
 import { env } from "./shared/config/env.js";
 import { errorHandler, notFound } from "./shared/middleware/errorHandler.js";
@@ -41,8 +43,10 @@ app.use(
   }),
 );
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_ORIGIN }));
+app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
+app.use(cookieParser());
+app.use(passport.initialize());
 app.use("/api", noStore);
 
 app.get("/api/health", healthCheck);
@@ -57,7 +61,8 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api", apiLimiter);
-app.use("/api/v1/auth", authLimiter);
+app.use("/api/v1/auth/login", authLimiter);
+app.use("/api/v1/auth/register", authLimiter);
 app.use("/api/v1", v1Router);
 
 app.use(notFound);

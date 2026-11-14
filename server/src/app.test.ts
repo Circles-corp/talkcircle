@@ -99,7 +99,7 @@ describe("app", () => {
   it("rate limits /api/v1/auth after 10 requests a minute", async () => {
     for (let attempt = 1; attempt <= 10; attempt += 1) {
       const response = await request(app).post("/api/v1/auth/login");
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(400);
     }
     const blocked = await request(app).post("/api/v1/auth/login");
     expect(blocked.status).toBe(429);

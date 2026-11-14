@@ -1,5 +1,3 @@
-export {
-  getSessionUser,
-  registerUser,
-  verifyCredentials,
-} from "./auth.service.js";
+export { authRouter } from "./auth.routes.js";
+export { passport } from "./passport.js";
+export { requireAuth } from "./requireAuth.js";
