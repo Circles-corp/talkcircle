@@ -13,6 +13,7 @@
         "dev": "tsx watch src/server.ts",
         "lint": "eslint .",
         "format": "prettier --write src",
+        "invite": "tsx src/scripts/createInvite.ts",
         "seed": "tsx src/scripts/seed.ts",
         "start": "node --enable-source-maps dist/server.js",
         "test:api": "newman run ../postman/circle.postman_collection.json --env-var baseUrl=http://localhost:4001",

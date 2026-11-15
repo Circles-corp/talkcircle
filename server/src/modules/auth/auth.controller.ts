@@ -42,7 +42,7 @@ export const login: RequestHandler = (req, res, next) => {
         next(
           new AppError(
             401,
-            "INAVLID_CREDENTIALS",
+            "INVALID_CREDENTIALS",
             "Email or password is incorrect.",
           ),
         );
