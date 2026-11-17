@@ -24,18 +24,20 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 11. Settings: account rows, Appearance (System, Light, Dark), log out; rows not built
     yet are shown disabled with "Coming soon"
 12. Landing page with a Three.js animated hero
+13. Direct messages: anyone can send a chat request; the recipient accepts or declines
+    (see section 12)
 
 The frontend is built first against a mock API (MSW) that follows section 5 exactly,
 so it connects to the real backend later without rewrites.
 
 ### Later / startup version
-"For you" ranked Home tab, per-category ranking decay, DMs, user-created circles,
+"For you" ranked Home tab, per-category ranking decay, user-created circles,
 moderation, notifications, stories, reposts, bookmarks, voice notes, video, live rooms,
 GIFs, more niches (e.g. fragrance), refresh tokens, appearance saved to the account,
 external movie/book/football data, circle ranks (weekly job), activity ranks weighted
 by likes received, a setting to hide your own badges, a consistent cross-device emoji set.
 See section 10 for the retention roadmap and section 11 for avatars, the wardrobe
-shop, crafts and friendships.
+shop, crafts and friendships, and section 12 for direct messages.
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -391,7 +393,9 @@ live feature that enables users ask creators questions about their content it no
 
 ### Avatars
 - Optional: each user chooses a real profile photo or a 3D avatar, and can switch at
-  any time; both use the same profile layout
+  any time; both use the same Discord-inspired profile layout
+- Only the profile header differs: a photo shows as a round picture with a status dot;
+  a 3D avatar shows as a tall full-body card with today's outfit line beside it
 - Style: soft clay-like 3D, slim body, slightly large head, matte pastel materials
 - Kits are plain colours: no real club crests, sponsor logos or text
 - Live 3D only on the profile and the avatar editor; feeds, comments and member lists
@@ -444,3 +448,98 @@ live feature that enables users ask creators questions about their content it no
   on it or not. Used to choose who sees a post
 - Models: Friendship { userA, userB (stored in a fixed order so each pair is unique),
   requestedBy, status ("pending" | "accepted"), timestamps }; CloseFriend { owner, friend }
+
+## 12. Direct messages
+
+### Phases
+| Phase | What |
+|---|---|
+| Beta | One-to-one chats, text, sharing a post, review or prediction; chat requests; report and block |
+| After the beta | Group chats, photos, voice notes |
+
+### Chat requests
+- Anyone can send a chat request to anyone. Every new chat starts as a request, mutuals
+  included
+- The request is the sender's first message: text only, 1–1000 characters. The sender
+  cannot send more until it is accepted, and sees the chat as "Requested"
+- It lands in the recipient's Requests tab. The recipient can:
+  - Accept: the chat moves to Chats and both can message freely
+  - Decline: the request is deleted. The sender is not told; to them it stays "Requested"
+  - Block: the request is deleted and the sender is blocked
+- After a decline, the same sender cannot request that person again for 30 days
+- Accepting a chat does not follow or friend anyone
+- If both people send a request to each other, it becomes an accepted chat (same rule as
+  friend requests)
+
+### Blocking
+- Blocked users cannot send chat requests, messages or friend requests to the blocker
+- Blocking ends an existing chat for both sides; history stays hidden while the block lasts
+- Nobody is told they were blocked. Block is shared with friendships (section 11)
+
+### Sharing
+- A post, review or prediction can be shared into a chat as a card linking to the original
+- If the original is deleted or the reader cannot see it (members only, close friends),
+  the card shows "This post is unavailable"
+
+### Pictures in chats
+- Each person's current picture shows in the inbox, the chat header and beside the last
+  message of each run of messages, on both sides of the chat
+- The picture is their profile photo or the small still image of their 3D avatar
+  (section 11), never a live 3D model; with no picture set, initials on a colour
+- Messages store only the sender id, so a changed picture updates across old messages
+
+### Safety
+- Report on every message and every chat; reports go to a moderation queue. In the beta
+  the founders read every report and respond within 24 hours (App Store guideline 1.2
+  requires reporting with timely responses, blocking and published contact details)
+- Links to unlicensed live streams are not allowed and are removed on report
+  (Copyright Act 2022 takedown duties)
+- Rate limits: 5 messages per 10 s per user (same as circle chat); 20 new chat requests
+  per user per day
+- "Seen" read receipts are on by default. Turning them off hides yours and theirs
+
+### Models
+- Conversation { userA, userB (stored in a fixed order so each pair has one chat),
+  status ("request" | "active"), requestedBy, lastMessageAt, timestamps }
+- ConversationMember { conversation, user, lastReadAt, unreadCount, muted,
+  lastMessageAt }
+- DirectMessage { conversation, sender, text (1–1000), share? { type ("post" | "review" |
+  "prediction"), id }, timestamps }
+- Block { blocker, blocked, timestamps }
+- DeclinedRequest { sender, recipient, createdAt } with a 30-day TTL index
+
+### Indexes
+| Collection | Index | Purpose |
+|---|---|---|
+| conversations | { userA, userB } unique | One chat per pair |
+| conversationmembers | { user, lastMessageAt } | Inbox, newest first |
+| directmessages | { conversation, createdAt } | Chat history |
+| blocks | { blocker, blocked } unique | Block checks |
+| declinedrequests | { sender, recipient }; TTL on createdAt | 30-day request cooldown |
+
+### API (base /api/v1, logged in)
+| Method | Path | Notes |
+|---|---|---|
+| GET | /dms?tab=chats\|requests&cursor= | Inbox, newest activity first, 20 per page |
+| POST | /dms | { userId, text } starts a request, or returns the existing chat |
+| GET | /dms/:id/messages?before= | Members only; history, newest first, 30 per page |
+| POST | /dms/:id/messages | Send; REST fallback when the socket is down |
+| POST | /dms/:id/accept | Recipient only |
+| POST | /dms/:id/decline | Recipient only |
+| POST | /dms/:id/read | Marks the chat read |
+| POST | /dms/:id/report | { messageId?, reason } |
+| POST | /users/:id/block | Block |
+| DELETE | /users/:id/block | Unblock |
+
+Socket events:
+- client → server: dm:send { conversationId, text, share? } → ack { ok: true, message } |
+  { ok: false, error }
+- server → room dm:<conversationId>: dm:new { message }
+- server → room user:<id>: dm:request { conversation }
+
+### Scaling limits
+| Area | Breaks when | Fix |
+|---|---|---|
+| Live delivery | A second server is added | Socket.IO Redis adapter so events reach every server |
+| Unread counts | Counting messages on every inbox load | unreadCount kept on ConversationMember |
+| Moderation | Reports outgrow the founders | Moderation queue with roles and automatic filtering |
