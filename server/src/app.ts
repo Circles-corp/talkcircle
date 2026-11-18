@@ -53,7 +53,7 @@ app.get("/api/health", healthCheck);
 
 app.get("/", (_req, res) => {
   res.status(200).json({
-    name: "Circle API",
+    name: "Pinned API",
     status: "running",
     health: "/api/health",
     api: "/api/v1",

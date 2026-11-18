@@ -97,7 +97,7 @@ export default function HomePage(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-logo text-3xl font-bold xl:sr-only">Circle</h1>
+      <h1 className="font-logo text-3xl font-bold xl:sr-only">Pinned</h1>
       {renderContent()}
     </div>
   );

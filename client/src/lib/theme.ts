@@ -1,7 +1,7 @@
 export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
-const STORAGE_KEY = "circle-theme";
+const STORAGE_KEY = "pinned-theme";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 const BROWSER_BAR_COLORS: Record<ResolvedTheme, string> = {

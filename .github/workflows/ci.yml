@@ -22,7 +22,7 @@ jobs:
         working-directory: server
     env:
       NODE_ENV: test
-      MONGODB_URI: mongodb://127.0.0.1:27017/circle-ci
+      MONGODB_URI: mongodb://127.0.0.1:27017/pinned-ci
       CLIENT_ORIGIN: http://localhost:5173
       JWT_SECRET: ci-only-placeholder-secret-not-used-in-any-real-environment
     steps:

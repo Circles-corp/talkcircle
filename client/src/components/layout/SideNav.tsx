@@ -14,7 +14,7 @@ export function SideNav(): JSX.Element {
           className="size-9 rounded-full border-4 border-accent xl:hidden"
         />
         <span className="hidden font-logo text-3xl font-bold xl:inline">
-          Circle
+          Pinned
         </span>
       </div>
       <ul className="flex flex-col items-center gap-1 xl:items-stretch">

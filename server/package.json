@@ -1,5 +1,5 @@
 {
-    "name": "circle-server",
+    "name": "pinned-server",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -17,8 +17,8 @@
         "invite": "tsx src/scripts/createInvite.ts",
         "seed": "tsx src/scripts/seed.ts",
         "start": "node --enable-source-maps dist/server.js",
-        "test:api": "newman run ../postman/circle.postman_collection.json --env-var baseUrl=http://localhost:4001",
-        "test:api:prod": "newman run ../postman/circle.postman_collection.json --env-var baseUrl=https://talkcircle-id64.onrender.com",
+        "test:api": "newman run ../postman/pinned.postman_collection.json --env-var baseUrl=http://localhost:4001",
+        "test:api:prod": "newman run ../postman/pinned.postman_collection.json --env-var baseUrl=https://talkcircle-id64.onrender.com",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {

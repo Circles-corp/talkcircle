@@ -1,4 +1,4 @@
-# Circle
+# Pinned
 
 **Where fans talk.** A social app built around fan communities ("circles") for movies, books and football — post, discuss and chat live with people who love the same things.
 

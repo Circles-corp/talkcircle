@@ -1,6 +1,6 @@
-# Contributing to Circle
+# Contributing to Pinned
 
-Thanks for helping build Circle. These rules keep the codebase consistent, safe and
+Thanks for helping build Pinned. These rules keep the codebase consistent, safe and
 easy to review. Pull requests that don't follow them will be asked to change before merging.
 
 ## Before you start

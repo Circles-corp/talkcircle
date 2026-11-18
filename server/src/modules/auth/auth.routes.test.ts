@@ -49,7 +49,7 @@ const { app } = await import("../../app.js");
 const { env } = await import("../../shared/config/env.js");
 
 const VALID = {
-  inviteCode: "CIRCLE01",
+  inviteCode: "PINNED01",
   username: "johnnymax",
   email: "john@example.com",
   password: "correct-horse-battery",
@@ -58,7 +58,7 @@ const VALID = {
 
 function sessionCookie(setCookie: string[] | undefined): string {
   const cookie = (setCookie ?? []).find((value) =>
-    value.startsWith("circle_session="),
+    value.startsWith("pinned_session="),
   );
   if (cookie === undefined) {
     throw new Error("No session cookie was set");
@@ -72,7 +72,7 @@ function cookiePair(setCookie: string[] | undefined): string {
 
 beforeEach(() => {
   resetFakeStores();
-  seedInvite("CIRCLE01", 5, null);
+  seedInvite("PINNED01", 5, null);
 });
 
 describe("POST /api/v1/auth/register", () => {
@@ -114,13 +114,13 @@ describe("POST /api/v1/auth/register", () => {
   it("counts one use of the invite code", async () => {
     await request(app).post("/api/v1/auth/register").send(VALID);
 
-    expect(inviteUseCount("CIRCLE01")).toBe(1);
+    expect(inviteUseCount("PINNED01")).toBe(1);
   });
 
   it("accepts the invite code in lowercase with spaces", async () => {
     const response = await request(app)
       .post("/api/v1/auth/register")
-      .send({ ...VALID, inviteCode: " circle01 " });
+      .send({ ...VALID, inviteCode: " pinned01 " });
 
     expect(response.status).toBe(201);
   });
@@ -197,7 +197,7 @@ describe("POST /api/v1/auth/register", () => {
 
     expect(response.status).toBe(409);
     expect(response.body).toMatchObject({ error: { code: "EMAIL_TAKEN" } });
-    expect(inviteUseCount("CIRCLE01")).toBe(1);
+    expect(inviteUseCount("PINNED01")).toBe(1);
   });
 
   it("returns 409 for a taken username", async () => {
@@ -312,7 +312,7 @@ describe("GET /api/v1/auth/me and logout", () => {
       .post("/api/v1/auth/register")
       .send(VALID);
     const token = cookiePair(registered.get("Set-Cookie")).replace(
-      "circle_session=",
+      "pinned_session=",
       "",
     );
     const response = await request(app)
@@ -356,7 +356,7 @@ describe("GET /api/v1/auth/me and logout", () => {
     );
     const response = await request(app)
       .get("/api/v1/auth/me")
-      .set("Cookie", `circle_session=${expired}`);
+      .set("Cookie", `pinned_session=${expired}`);
 
     expect(response.status).toBe(401);
   });
@@ -365,7 +365,7 @@ describe("GET /api/v1/auth/me and logout", () => {
     const forged = jwt.sign({}, "", { algorithm: "none", subject: "someone" });
     const response = await request(app)
       .get("/api/v1/auth/me")
-      .set("Cookie", `circle_session=${forged}`);
+      .set("Cookie", `pinned_session=${forged}`);
 
     expect(response.status).toBe(401);
   });

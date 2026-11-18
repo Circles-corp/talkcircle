@@ -53,7 +53,7 @@ describe("app", () => {
     const response = await request(app).get("/");
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      name: "Circle API",
+      name: "Pinned API",
       status: "running",
       health: "/api/health",
       api: "/api/v1",

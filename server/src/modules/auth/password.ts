@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { env } from "../../shared/config/env.js";
 
 const BCRYPT_COST = env.NODE_ENV === "test" ? 4 : 12;
-const TIMING_DUMMY_HASH = bcrypt.hashSync("circle-timing-dummy", BCRYPT_COST);
+const TIMING_DUMMY_HASH = bcrypt.hashSync("pinned-timing-dummy", BCRYPT_COST);
 
 export function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, BCRYPT_COST);
