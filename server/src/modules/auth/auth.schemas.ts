@@ -32,7 +32,7 @@ export const registerSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(
-      /^[a-z09_]{3,20}$/,
+      /^[a-z0-9_]{3,20}$/,
       "Username must be 3-20 characters: letters, numbers or _",
     ),
   email,

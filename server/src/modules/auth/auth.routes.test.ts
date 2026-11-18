@@ -111,6 +111,15 @@ describe("POST /api/v1/auth/register", () => {
     });
   });
 
+    it("accepts usernames that contain any digit", async () => {
+    const response = await request(app)
+      .post("/api/v1/auth/register")
+      .send({ ...VALID, username: "tunde_2024" });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ user: { username: "tunde_2024" } });
+  });
+
   it("counts one use of the invite code", async () => {
     await request(app).post("/api/v1/auth/register").send(VALID);
 
