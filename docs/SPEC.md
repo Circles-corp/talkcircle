@@ -1,6 +1,6 @@
-# Circle — Project Spec
+# Pinned — Project Spec
 
-Circle is where fans talk. Users join fan communities ("circles") for movies, books and
+Pinned is where fans talk. Users join fan communities ("circles") for movies, books and
 football, follow other fans, post and discuss in circles, and chat live with other members.
 
 ## 1. Scope
@@ -12,7 +12,8 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 3. Following: follow and unfollow users; followers and following lists
 4. Circles: browse the seeded circles, join and leave; circle page shows its posts with
    Hot and New tabs
-5. Posts: create in a joined circle (text and/or one photo, optional spoiler flag);
+5. Posts: create in a joined circle (text and/or one photo or one video up to 60 s,
+   optional spoiler flag, optional credit for a reposted clip);
    delete own; Home feed of posts from joined circles, followed users and yourself
 6. Likes: like/unlike a post
 7. Comments: add (emoji picker), edit own, delete own; post author can delete any
@@ -32,12 +33,12 @@ so it connects to the real backend later without rewrites.
 
 ### Later / startup version
 "For you" ranked Home tab, per-category ranking decay, user-created circles,
-moderation, notifications, stories, reposts, bookmarks, voice notes, video, live rooms,
+moderation, notifications, stories, reposts, bookmarks, voice notes, live rooms,
 GIFs, more niches (e.g. fragrance), refresh tokens, appearance saved to the account,
 external movie/book/football data, circle ranks (weekly job), activity ranks weighted
 by likes received, a setting to hide your own badges, a consistent cross-device emoji set.
 See section 10 for the retention roadmap and section 11 for avatars, the wardrobe
-shop, crafts and friendships, and section 12 for direct messages.
+shop, crafts and friendships, section 12 for direct messages and section 13 for video posts.
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -45,8 +46,8 @@ Tailwind CSS, lucide-react, MSW (mock API), React Toastify, emoji-picker-react,
 socket.io-client, @react-three/fiber + @react-three/drei
 Server: Node 24, Express 5, TypeScript (strict), Mongoose, Zod, Passport.js
 (passport-local, passport-jwt), bcrypt, jsonwebtoken, Cloudinary (signed direct uploads),
-socket.io, helmet, cors, express-rate-limit, dotenv
-Data: MongoDB Atlas | Media: Cloudinary
+Mux (direct video uploads and webhooks), socket.io, helmet, cors, express-rate-limit, dotenv
+Data: MongoDB Atlas | Media: Cloudinary (photos), Mux (video, see section 13)
 Hosting: client on Vercel, server on Render
 Testing: Vitest + Supertest (server logic and routes), Postman + Newman (API contract)
 
@@ -103,8 +104,12 @@ description (0–300), memberCount, timestamps. Created only by the seed script.
 
 Membership: user, circle, timestamps. Owned by circles.
 
-Post: author, circle, text (0–2000), image {url, publicId} | null (text or image
-required), isSpoiler (default false), likeCount, commentCount, hotScore, timestamps
+Post: author, circle, text (0–2000), image {url, publicId} | null, video (Video id) |
+null (text, image or video required; never both image and video), credit (0–100) |
+null, isSpoiler (default false), likeCount, commentCount, hotScore, timestamps
+
+Video: owner, uploadId, assetId | null, playbackId | null, status (waiting | processing |
+ready | failed), durationSec | null, aspect | null, timestamps. See section 13.
 
 Like: user, post, timestamps. Owned by interactions.
 
@@ -219,10 +224,13 @@ Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _i
 | GET | /circles/:slug/posts?sort=hot\|new | yes | Circle posts; sort defaults to hot |
 | GET | /circles/:slug/messages | yes | Members only; chat history, newest first |
 | POST | /media/signature | yes | Signed Cloudinary upload params for the user's folder |
-| POST | /posts | yes | { circleId, text?, image? { publicId }, isSpoiler? }; members only |
+| POST | /media/video-upload | yes | Creates a Mux direct upload → { videoId, uploadUrl }; 20 per day |
+| GET | /media/videos/:id | yes | Owner only → { status, playbackId?, durationSec? } |
+| POST | /webhooks/mux | no | Mux events; signature checked with MUX_WEBHOOK_SECRET |
+| POST | /posts | yes | { circleId, text?, image? { publicId }, videoId?, credit?, isSpoiler? }; members only |
 | GET | /posts/feed | yes | → { items: FeedItem[], nextCursor }; chronological |
 | GET | /posts/:id | yes | Single post |
-| DELETE | /posts/:id | yes | Author only; deletes image, likes and comments |
+| DELETE | /posts/:id | yes | Author only; deletes image or video, likes and comments |
 | POST | /posts/:id/like | yes | Idempotent like |
 | DELETE | /posts/:id/like | yes | Idempotent unlike |
 | GET | /posts/:id/comments | yes | Paginated, oldest first |
@@ -258,6 +266,8 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
   client removes duplicates by post id; an occasional skipped post is accepted.
 - Images go browser → Cloudinary directly; the server never holds image data in memory.
   Uploads are limited to the user's own folder, jpeg/png/webp, max 5 MB.
+- Videos go browser → Mux directly; the server never holds video data. MP4, MOV or WebM,
+  max 60 seconds and 200 MB (see section 13).
 - Every authenticated response sends Cache-Control: no-store
 - Passwords: min 8 chars and at most 72 bytes (bcrypt's limit), bcrypt cost 12; JWT expiry 7 days
 - Registration mode (REGISTRATION_MODE env, default invite): invite = a valid code is
@@ -310,12 +320,15 @@ Responsive targets: 360, 390, 768, 1280+ px.
 | Render / Atlas free tiers | Real traffic | Paid plans |
 | Weekly circle-rank job | Thousands of circles with heavy chat | Daily per-circle activity rollups instead of scanning raw messages |
 | Rate limiting by IP | Many mobile users share one carrier IP | Limit logged-in users by user id |
+| Video delivery minutes | Views pass Mux's 100,000 free minutes a month | Paid delivery; Data saver; one autoplaying video at a time |
+| Video webhooks | A webhook is missed while the server is down | Job re-checks videos stuck in processing for 10+ minutes |
+| Video moderation | Reports of video outgrow the founders | Moderation queue, automatic content checks |
 
 ## 9. Vision (at scale)
 - Learn mode: a distraction-free mode for study circles — channels per
   topic or week, study rooms, progress over popularity, no ranked feed or public likes.
-- Circle tech shop: a marketplace where creators sell their own developer products
-  (UI kits, templates, plugins, starter projects, courses); Circle takes a commission.
+- Pinned tech shop: a marketplace where creators sell their own developer products
+  (UI kits, templates, plugins, starter projects, courses); Pinned takes a commission.
   Open-source tools and other people's documentation are never resold.
 
 ## 10. Content and retention
@@ -332,7 +345,7 @@ time in the app or for outrage.
 | Programmed | Weekly prompts, events, polls, predictions | Team (the backbone in the beta) |
 | User posts | Takes, reactions, ratings | Members |
 | Data-driven | Fixtures, scores, leaderboards, result cards | Automatic (NPFL entered by hand in the beta) |
-| Hosts | Shows, later Circle Radio | Media partners |
+| Hosts | Shows, later Pinned Radio | Media partners |
 
 ### Weekly rhythm (football-first beta, Lagos time)
 | Day | Content |
@@ -367,7 +380,7 @@ Owner of daily content in the beta: to confirm (about 30 minutes a day).
    event-attendance ranks, derby week, circles near you
 2. Chapter-paced reading, spoiler-synced reactions, premiere countdown rooms, creator sessions
 3. Voice-note posts (find the natural hosts)
-4. Circle Radio, talk-only: a station per circle, programme schedule, Matchday Radio,
+4. Pinned Radio, talk-only: a station per circle, programme schedule, Matchday Radio,
    call-in hour, host ranks (LiveKit; host tools; legal checks before launch)
 
 ### Circles near you
@@ -435,7 +448,7 @@ live feature that enables users ask creators questions about their content it no
   paid image-to-3D service. Payment is taken before generation; daily limit per user
 - Every model is checked before it is public (automatic check plus reports): no nudity,
   no copies of brands or other people's work. The owner keeps the rights to their craft;
-  Circle gets a licence to display it
+  Pinned gets a licence to display it
 - Stored as a compressed GLB plus a still image; the 3D loads only when tapped
 
 ### Friendships
@@ -543,3 +556,68 @@ Socket events:
 | Live delivery | A second server is added | Socket.IO Redis adapter so events reach every server |
 | Unread counts | Counting messages on every inbox load | unreadCount kept on ConversationMember |
 | Moderation | Reports outgrow the founders | Moderation queue with roles and automatic filtering |
+
+## 13. Video posts
+Videos are part of the beta: a post can carry one video instead of a photo.
+
+### Limits
+- One video per post, up to 60 seconds and 200 MB; MP4, MOV or WebM
+- The client reads the length from the file before uploading and refuses longer videos;
+  the server checks the length again when Mux reports the video ready and deletes it if
+  it is over 60 seconds
+- 20 video uploads per user per day
+
+### Upload flow
+1. The client calls POST /media/video-upload. The server creates a Video (status
+   waiting) and a Mux direct upload, and returns { videoId, uploadUrl }
+2. The client uploads the file straight to uploadUrl with a progress bar. Express never
+   handles video bytes
+3. Mux turns the file into adaptive streaming (HLS) at several qualities
+4. Mux calls POST /webhooks/mux. The server checks the mux-signature header against
+   MUX_WEBHOOK_SECRET using the raw request body, then updates the Video:
+   video.upload.asset_created → processing; video.asset.ready → ready, with playbackId,
+   durationSec and aspect; video.asset.errored → failed
+5. The client polls GET /media/videos/:id every 3 seconds while the composer is open
+6. The post can be shared while the video is still processing. It stays hidden from
+   every feed until the video is ready; the author sees "Processing…" on their own post
+7. A failed video shows "This video could not be processed" with Try again to the author
+
+Webhook events are processed idempotently: the same event can arrive more than once.
+Server env: MUX_TOKEN_ID, MUX_TOKEN_SECRET, MUX_WEBHOOK_SECRET (values only in .env).
+
+### Playback
+- Player: Mux Player in React. The poster image comes from Mux, so nothing plays or
+  downloads until the post is on screen
+- Autoplay muted when at least half the video is visible; only one video plays at a time;
+  tap for sound
+- Data saver setting (in Settings): no autoplay and playback capped at 480p. It is on by
+  default when the browser reports Save-Data, because mobile data is expensive in Lagos
+- Spoiler videos stay blurred with no autoplay until tapped, like spoiler photos
+
+### Reposted clips
+- A user who posts a clip they did not film adds a credit (for example the original
+  account); it shows under the video
+- Every video has Report. A copyright report hides the video while it is reviewed, and a
+  confirmed claim removes it (takedown duties: Copyright Act 2022)
+
+### Provider
+Mux for the beta, Cloudinary stays for photos.
+
+| | Mux | Cloudflare Stream | Cloudinary (already used for photos) |
+|---|---|---|---|
+| Free each month | 100,000 delivery minutes; basic encoding free | None | 25 credits shared with photos |
+| Storage | $0.003 per minute stored per month | $5 per 1,000 minutes stored | 1 credit = 1 GB |
+| Delivery | $0.001 per minute after the free minutes | $1 per 1,000 minutes | 1 credit = 1 GB |
+| Encoding | Free (basic quality) | Free | 1 credit = 500 s SD or 250 s HD |
+
+At beta size (about 100 testers), 1,000 one-minute clips stored cost about $3 a month on
+Mux and delivery stays inside the free minutes. Prices checked November 2026; check again
+before launch.
+
+### Scaling limits
+| Area | Breaks when | Fix |
+|---|---|---|
+| Delivery cost | Views pass the free minutes | Paid delivery, Data saver, lower default quality |
+| Storage cost | Old videos pile up | Delete videos of deleted posts at once; review old unwatched videos |
+| Webhooks | Missed while the server is down | Mux retries; a job re-checks stuck videos |
+| Moderation | Video reports outgrow the founders | Moderation queue, automatic content checks |
