@@ -111,7 +111,7 @@ describe("POST /api/v1/auth/register", () => {
     });
   });
 
-    it("accepts usernames that contain any digit", async () => {
+  it("accepts usernames that contain any digit", async () => {
     const response = await request(app)
       .post("/api/v1/auth/register")
       .send({ ...VALID, username: "tunde_2024" });
