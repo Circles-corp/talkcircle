@@ -12,12 +12,13 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 3. Following: follow and unfollow users; followers and following lists
 4. Circles: browse the seeded circles, join and leave; circle page shows its posts with
    Hot and New tabs
-5. Posts: create in a joined circle (text and/or one photo or one video up to 60 s,
-   optional spoiler flag, optional credit for a reposted clip);
+5. Posts: create in a joined circle as one of six types (Take, Match, Diary, Moment,
+   Live, Event; section 14), with one photo or one video up to 60 s where the type allows,
+   optional spoiler flag, optional credit for a reposted clip;
    delete own; Home feed of posts from joined circles, followed users and yourself
 6. Likes: like/unlike a post
-7. Comments: add (emoji picker), edit own, delete own; post author can delete any
-   comment on their post
+7. Comments: add (emoji picker), reply to a comment (one level deep), edit own, delete
+   own; post author can delete any comment on their post
 8. Live circle chat: one real-time chat room per circle, members only
 9. Search: one search bar, results in three tabs — Circles, People, Posts
 10. Member badges: each post and member list shows the author's category-themed
@@ -27,18 +28,19 @@ football, follow other fans, post and discuss in circles, and chat live with oth
 12. Landing page with a Three.js animated hero
 13. Direct messages: anyone can send a chat request; the recipient accepts or declines
     (see section 12)
+14. Saved: save posts and comments inside the app; only the user sees their saved items
 
 The frontend is built first against a mock API (MSW) that follows section 5 exactly,
 so it connects to the real backend later without rewrites.
 
 ### Later / startup version
 "For you" ranked Home tab, per-category ranking decay, user-created circles,
-moderation, notifications, stories, reposts, bookmarks, voice notes, live rooms,
+moderation, notifications, stories, reposts, voice notes, live rooms,
 GIFs, more niches (e.g. fragrance), refresh tokens, appearance saved to the account,
 external movie/book/football data, circle ranks (weekly job), activity ranks weighted
 by likes received, a setting to hide your own badges, a consistent cross-device emoji set.
 See section 10 for the retention roadmap and section 11 for avatars, the wardrobe
-shop, crafts and friendships, section 12 for direct messages and section 13 for video posts.
+shop, crafts and friendships, section 12 for direct messages, section 13 for video posts and section 14 for post types.
 
 ## 2. Stack
 Client: Vite, React 19, TypeScript (strict), Redux Toolkit + RTK Query, React Router,
@@ -104,16 +106,29 @@ description (0–300), memberCount, timestamps. Created only by the seed script.
 
 Membership: user, circle, timestamps. Owned by circles.
 
-Post: author, circle, text (0–2000), image {url, publicId} | null, video (Video id) |
-null (text, image or video required; never both image and video), credit (0–100) |
-null, isSpoiler (default false), likeCount, commentCount, hotScore, timestamps
+Post: author, circle, type ("take" | "match" | "diary" | "moment" | "live" | "event"),
+text (0–2000), details (per type, section 14), image {url, publicId} | null, video
+(Video id) | null (never both image and video; which types allow media: section 14),
+credit (0–100) | null, isSpoiler (default false), likeCount, commentCount, hotScore,
+timestamps
 
 Video: owner, uploadId, assetId | null, playbackId | null, status (waiting | processing |
 ready | failed), durationSec | null, aspect | null, timestamps. See section 13.
 
 Like: user, post, timestamps. Owned by interactions.
 
-Comment: post, author, text (1–500), editedAt: Date | null, timestamps
+Comment: post, author, parent (Comment id) | null, replyTo (User id) | null, text
+(1–500), replyCount, editedAt: Date | null, deletedAt: Date | null, timestamps.
+parent is null for a top-level comment; a reply's parent is always a top-level comment
+on the same post.
+
+Save: user, targetType ("post" | "comment"), target, timestamps. Unique on
+{ user, targetType, target }. Private to the user.
+
+TakeVote: user, post, side ("a" | "b"), timestamps. Unique on { user, post }.
+
+PostRsvp: user, post, status ("going" | "maybe" | "no"), timestamps. Unique on
+{ user, post }. For Event posts (separate from EventAttendance).
 
 ChatMessage: circle, sender, text (1–1000), timestamps
 
@@ -128,9 +143,10 @@ timestamps. A use is claimed with one atomic update (useCount < maxUses and not 
 so two people cannot take the last slot at once; it is given back if the account
 cannot be created.
 
-Counters (memberCount, followerCount, followingCount, likeCount, commentCount, hotScore)
-change in the same MongoDB transaction as the record they count, and only when the
-membership/follow/like/comment actually changed.
+Counters (memberCount, followerCount, followingCount, likeCount, commentCount,
+replyCount, Take vote counts, Event going count, hotScore) change in the same MongoDB
+transaction as the record they count, and only when the membership/follow/like/
+comment/vote/RSVP actually changed. commentCount counts comments and replies.
 
 ### Ranking (Hot)
 hotScore = log10(1 + likeCount + 2 × commentCount) + createdAtSeconds / 45000
@@ -189,7 +205,10 @@ updated in the same transaction as the post or like.
 | posts | { author, createdAt, _id } | Profile posts and Home feed |
 | posts | text index on text | Post search |
 | likes | { user, post } (unique) | No double likes |
-| comments | { post, createdAt } | Comments in order |
+| comments | { post, parent, createdAt } | Top-level comments in order, replies in order |
+| saves | { user, targetType, target } (unique); { user, targetType, createdAt } | No double saves, Saved list |
+| takevotes | { user, post } (unique) | One vote per user per Take |
+| postrsvps | { user, post } (unique) | One answer per user per Event |
 | chatmessages | { circle, createdAt } | Chat history |
 
 Seeded circles (scripts/seed.ts, idempotent by slug):
@@ -227,14 +246,23 @@ Chronological lists page on (createdAt, _id); the Hot tab pages on (hotScore, _i
 | POST | /media/video-upload | yes | Creates a Mux direct upload → { videoId, uploadUrl }; 20 per day |
 | GET | /media/videos/:id | yes | Owner only → { status, playbackId?, durationSec? } |
 | POST | /webhooks/mux | no | Mux events; signature checked with MUX_WEBHOOK_SECRET |
-| POST | /posts | yes | { circleId, text?, image? { publicId }, videoId?, credit?, isSpoiler? }; members only |
+| POST | /posts | yes | { circleId, type, text?, details, image? { publicId }, videoId?, credit?, isSpoiler? }; members only |
 | GET | /posts/feed | yes | → { items: FeedItem[], nextCursor }; chronological |
 | GET | /posts/:id | yes | Single post |
 | DELETE | /posts/:id | yes | Author only; deletes image or video, likes and comments |
 | POST | /posts/:id/like | yes | Idempotent like |
 | DELETE | /posts/:id/like | yes | Idempotent unlike |
-| GET | /posts/:id/comments | yes | Paginated, oldest first |
-| POST | /posts/:id/comments | yes | Add comment |
+| GET | /posts/:id/comments | yes | Top-level comments, oldest first, paginated, each with replyCount |
+| GET | /comments/:id/replies | yes | Replies to one comment, oldest first, paginated |
+| POST | /posts/:id/comments | yes | { text, parentId? }; parentId may be a reply, then the reply goes under its top-level comment with replyTo set |
+| POST | /posts/:id/vote | yes | Take only: { side: "a" \| "b" }; one vote, can be changed |
+| PUT | /posts/:id/rsvp | yes | Event only: { status: "going" \| "maybe" \| "no" } |
+| POST | /posts/:id/updates | yes | Live only, author only: { minute, text } |
+| POST | /posts/:id/save | yes | Idempotent save |
+| DELETE | /posts/:id/save | yes | Idempotent unsave |
+| POST | /comments/:id/save | yes | Idempotent save |
+| DELETE | /comments/:id/save | yes | Idempotent unsave |
+| GET | /users/me/saved?type=posts\|comments | yes | Own saved items, newest saved first, paginated |
 | PATCH | /comments/:id | yes | Comment author only; sets editedAt |
 | DELETE | /comments/:id | yes | Comment author OR post author |
 | GET | /search?q=&type=circles\|people\|posts | yes | q is 2–100 chars; paginated |
@@ -262,6 +290,15 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
 - All permissions are enforced in services and socket handlers; unauthorized → 403
 - Posting and chatting require circle membership; leaving keeps existing posts
 - Spoiler posts are always blurred until tapped, in every list and in every sort order
+- Replies are one level deep. Replying to a reply puts the new reply under the same
+  top-level comment and sets replyTo, shown as @name. Replies are collapsed behind
+  "View N replies".
+- Deleting a comment that has replies keeps it as "This comment was deleted" (deletedAt
+  set, text removed) so the replies keep their context; one without replies is removed.
+- Saved items are private: no one else can see what a user saved or how many times a
+  post was saved. When a post or comment is deleted its saves are deleted too; the
+  Saved list skips anything that no longer exists.
+- /users/me/saved cannot clash with a username: usernames are at least 3 characters
 - Hot tab: scores change while someone scrolls, so a post can move between pages. The
   client removes duplicates by post id; an occasional skipped post is accepted.
 - Images go browser → Cloudinary directly; the server never holds image data in memory.
@@ -291,13 +328,52 @@ Socket.io (connect with auth: { token }; each socket joins room user:<id>)
 - Use only long-established, widely supported emoji, so badges render on older devices
 
 ## 7. Screens and design
-Mobile-first. Navigation: radial menu on phones (under 768px), icon rail at 768px,
-labelled sidebar at 1280px+. Home is "Matchday": live now, today, this week. Each
-circle opens as a "Circle deck" page with Hot/New posts. Explore keeps the tile layout.
-Event titles are clamped to two lines.
-Screens: Landing (Three.js hero) · Register/Login · Home feed · Explore circles ·
-Circle page (Hot/New posts + live chat) · Post detail with comments · Search (Circles,
-People, Posts) · Profile (+ edit, followers, following) · Settings · 404.
+Mobile-first. The approved mockup is pinned-app-mockup.html (November 2026).
+
+Navigation
+- Phones (under 768px): bottom tabs Home, Explore, Chats, Profile; Chats shows an unread
+  badge. The tabs hide on screens where the user types (a conversation, a post with
+  comments, a create screen). The radial menu is replaced.
+- 768px and wider: a side bar with the same four items and a Pin button at the top
+  (desktop is not mocked yet).
+- Pin is the only way to post. It floats on Home and circle pages and opens "What are
+  you pinning?" with the six post types. From Home it then asks which joined circle;
+  from a circle page it posts in that circle (non-members are asked to join first).
+
+The board
+- Home and every circle page are corkboards of pinned notes in two columns. Notes
+  alternate left and right so the newest stay at the top.
+- Each post type has its own note style (section 14). Filter chips (All and the six
+  types) narrow the board by type.
+- Notes on Home show their circle name (tap opens the circle); circle pages leave it out.
+- Each note has a bookmark to save it. Tapping a note opens the post in its own layout;
+  the header always shows the circle name and the post type.
+
+Screens
+- Landing (Three.js hero) · Register/Login · 404
+- Home: Search and Notifications buttons (notifications come after the beta), a row of
+  your circles plus "Find more" (opens Explore), type chips, the board, Pin.
+- Explore: category chips (All, Football, Movies, Books), a "Live now" strip, and every
+  circle as a row with picture, member count, description and Join.
+- Circle page: back, picture, name, members and pins count, Join/Joined, type chips, the
+  board, Pin. Leaving a circle removes its pins from Home.
+- Post detail: the type's own layout, Save, More (Report, Copy link, Delete for the
+  author), comments oldest first with Reply and Save on each, and a comment box with a
+  "Replying to <name>" bar when replying.
+- Create screen per type: its own fields (section 14); Pin turns on when the required
+  fields are filled.
+- Profile (Discord-style, section 11): banner, photo or 3D header, name, @username,
+  badges; Edit profile and Saved on your own, Add friend and Message on others; tabs
+  Main, Pins (their posts as a board), Activity, Crafts.
+- Saved (own profile only): private; Posts tab as a board, Comments tab with the post
+  each comment came from.
+- Chats: Chats and Requests tabs; a conversation screen (section 12).
+- Search: Circles, People, Posts; needs at least 2 characters.
+- Settings: profile picture (Photo or 3D), Data saver, theme, invite friends, log out.
+
+Still to design: where the Hot/New sort sits on the board, where the live circle chat
+sits on the circle page, and the desktop layout.
+
 States: empty, loading (skeletons), error/offline, long content, large numbers (12.4k).
 Colours: charcoal accent, light and dark themes. All colours are tokens in
 client/src/index.css; components never use fixed colour values. Colour never carries
@@ -323,6 +399,9 @@ Responsive targets: 360, 390, 768, 1280+ px.
 | Video delivery minutes | Views pass Mux's 100,000 free minutes a month | Paid delivery; Data saver; one autoplaying video at a time |
 | Video webhooks | A webhook is missed while the server is down | Job re-checks videos stuck in processing for 10+ minutes |
 | Video moderation | Reports of video outgrow the founders | Moderation queue, automatic content checks |
+| Saves of a deleted viral post | Thousands of saves must be removed at once | Delete saves in background batches |
+| Long reply threads | One comment gets thousands of replies | Replies stay collapsed and paginated |
+| Two-column board | Many notes of very different heights | Place each note in the shorter column (masonry) |
 
 ## 9. Vision (at scale)
 - Learn mode: a distraction-free mode for study circles — channels per
@@ -621,3 +700,24 @@ before launch.
 | Storage cost | Old videos pile up | Delete videos of deleted posts at once; review old unwatched videos |
 | Webhooks | Missed while the server is down | Mux retries; a job re-checks stuck videos |
 | Moderation | Video reports outgrow the founders | Moderation queue, automatic content checks |
+
+## 14. Post types
+Every post is one of six types. Each has its own create screen, note style on the board
+and layout when opened. "Ehen!" is the label of the like button (Likes, section 1).
+
+| Type | Note colour | details | Required | Media |
+|---|---|---|---|---|
+| Take | purple | sideA, sideB (1–30 each); vote counts | text, both sides | photo or video |
+| Match | dark ticket | home, away (1–20), homeGoals, awayGoals (0–99) | all four | none |
+| Diary | pink | title (1–80), creator (0–60), rating (0.5–5 in halves) or progress (0–100 %) | title, rating or progress | photo |
+| Moment | teal | none (text is the caption, 0–140) | photo or video | photo or video |
+| Live | white with a red LIVE label | score (1–30), updates [{ minute (1–4), text (1–200) }], at most 100 | score and a first update | none |
+| Event | yellow poster | title (1–60), startsAt, place (0–60); going count | title, startsAt | photo or video (poster) |
+
+- Take: members pick a side once (they can change it); percentages show after voting.
+- Match: a score prediction; Ehen! is the one-tap reaction.
+- Diary: logs a film or book; reading progress shows as a bar.
+- Moment: answers the circle's prompt (for example "Kick-off moment").
+- Live: only the author adds updates; the post shows the latest one, the opened post
+  shows the whole timeline.
+- Event: Going, Maybe or Can't go (PostRsvp).
