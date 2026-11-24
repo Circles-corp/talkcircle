@@ -16,7 +16,7 @@ export function EventCard({ event, now }: EventCardProps): JSX.Element {
   return (
     <article className="flex items-center gap-3 rounded-card bg-surface p-3">
       <div
-        className={`flex size-16 shrink-0 items-center justify-center rounded-title text-ink ${style.tileClass}`}
+        className={`flex size-16 shrink-0 items-center justify-center rounded-tile text-ink ${style.tileClass}`}
       >
         <Icon aria-hidden="true" size={26} strokeWidth={1.75} />
       </div>

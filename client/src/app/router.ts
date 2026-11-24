@@ -53,6 +53,11 @@ export const router = createBrowserRouter([
             lazy: () => loadPage(() => import("../pages/ProfilePage.tsx")),
           },
           {
+            path: ROUTES.circle,
+            lazy: () => loadPage(() => import("../pages/CirclePage.tsx")),
+          },
+
+          {
             path: ROUTES.search,
             lazy: () => loadPage(() => import("../pages/SearchPage.tsx")),
           },
