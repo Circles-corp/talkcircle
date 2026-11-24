@@ -34,10 +34,11 @@ export const CIRCLE_SEEDS: readonly CircleSeed[] = [
     description: "Series, films and episode everyone is talking about.",
   },
   {
-    name: "K-movies",
-    slug: "k-movies",
+    name: "Korean Drama",
+    slug: "korean-drama",
     category: "movies",
-    description: "Series, films and the episode everyone is talking about.",
+    description:
+      "Korean series and films: new episodes, binge picks and stars.",
   },
   {
     name: "African Literature",
