@@ -212,7 +212,7 @@ updated in the same transaction as the post or like.
 | chatmessages | { circle, createdAt } | Chat history |
 
 Seeded circles (scripts/seed.ts, idempotent by slug):
-Movies: Marvel & DC, Nollywood, Hollywood, Bollywood, Anime · Books: African Literature,
+Movies: Marvel & DC, Nollywood, Hollywood, Bollywood, Korean Drama, Anime · Books: African Literature,
 Fantasy & Sci-Fi · Football: Premier League, La Liga, UCL, UEL, NPFL, Super Eagles
 
 ## 5. API contract (base /api/v1, JSON, auth = httpOnly session cookie)
