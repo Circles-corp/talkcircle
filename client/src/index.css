@@ -17,6 +17,7 @@
   --color-tint-pink: #ffe3e9;
   --color-tint-teal: #e0f4f1;
   --color-tint-amber: #fff1d6;
+  --color-cork: #e9dcc6;
 
   --font-logo: system-ui, sans-serif;
   --font-display: system-ui, sans-serif;
@@ -49,6 +50,7 @@
   --color-tint-pink: #3a2430;
   --color-tint-teal: #1c3431;
   --color-tint-amber: #3a3020;
+  --color-cork: #221e19;
 }
 
 @layer base {

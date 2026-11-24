@@ -8,6 +8,6 @@ interface CategoryStyle {
 
 export const CATEGORY_STYLE: Record<CircleCategory, CategoryStyle> = {
   football: { tileClass: "bg-tint-teal", icon: Trophy },
-  movies: { tileClass: "bg-tinit-pink", icon: Clapperboard },
+  movies: { tileClass: "bg-tint-pink", icon: Clapperboard },
   books: { tileClass: "bg-tint-amber", icon: BookOpen },
 };
