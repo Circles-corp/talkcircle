@@ -43,10 +43,11 @@ export function createMockCircles(): PublicCircle[] {
     },
     {
       id: "circle-korean-drama",
-      name: "Korean-drama",
+      name: "Korean-Drama",
       slug: "korean-drama",
       category: "movies",
-      description: "Korean series and films: new episodes, binge picks and stars.",
+      description:
+        "Korean series and films: new episodes, binge picks and stars.",
       memberCount: 178,
       isMember: false,
     },
