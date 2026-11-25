@@ -43,7 +43,7 @@ export function createMockCircles(): PublicCircle[] {
     },
     {
       id: "circle-korean-drama",
-      name: "Korean-Drama",
+      name: "Korean Drama",
       slug: "korean-drama",
       category: "movies",
       description:

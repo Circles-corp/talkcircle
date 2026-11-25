@@ -34,7 +34,7 @@ export function MembershipButton({
         }}
         className={
           circle.isMember
-            ? "min-h-11 min-w-20 rounded-full border-line bg-canvas px-4 text-sm font-semibold text-ink disabled:opacity-60"
+            ? "min-h-11 min-w-20 rounded-full border border-line bg-canvas px-4 text-sm font-semibold text-ink disabled:opacity-60"
             : "min-h-11 min-w-20 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent disabled:opacity-60"
         }
       >

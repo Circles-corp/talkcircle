@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { Outlet, useNavigation } from "react-router";
-import { RadialNav } from "./RadialNav.tsx";
+import { BottomNav } from "./BottomNav.tsx";
 import { SideNav } from "./SideNav.tsx";
 
 export function AppLayout(): JSX.Element {
@@ -22,7 +22,7 @@ export function AppLayout(): JSX.Element {
           <Outlet />
         </main>
       </div>
-      <RadialNav />
+      <BottomNav />
     </div>
   );
 }
