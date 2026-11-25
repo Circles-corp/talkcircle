@@ -12,7 +12,7 @@ import type { CircleCategory } from "../types/event.ts";
 
 type CategoryFilter = "all" | CircleCategory;
 
-const Filters: readonly CategoryFilter[] = ["all", ...CATEGORY_ORDER];
+const FILTERS: readonly CategoryFilter[] = ["all", ...CATEGORY_ORDER];
 const SKELETON_ROWS = [1, 2, 3, 4, 5, 6];
 
 function filterLabel(filter: CategoryFilter): string {
@@ -49,13 +49,13 @@ export default function ExplorePage(): JSX.Element {
     if (data === undefined) {
       return (
         <div className="flex flex-col items-start gap-3 rounded-card bg-surface p-5">
-          <h2 className="font-dispaly text-lg font-bold">
+          <h2 className="font-display text-lg font-bold">
             Couldn't load circles
           </h2>
           <p className="text-sm text-ink-muted">
             {isError
-              ? "check your connection and try again."
-              : "something went wrong."}
+              ? "Check your connection and try again."
+              : "Something went wrong."}
           </p>
           <button
             type="button"
@@ -131,7 +131,7 @@ export default function ExplorePage(): JSX.Element {
         aria-label="Filter by category"
         className="flex gap-2 overflow-x-auto"
       >
-        {Filters.map((option) => (
+        {FILTERS.map((option) => (
           <button
             key={option}
             type="button"
