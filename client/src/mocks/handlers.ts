@@ -3,6 +3,7 @@ import type { PublicCircle } from "../types/circle.ts";
 import type { CircleEvent, HomeEvents } from "../types/event.ts";
 import { createMockCircles } from "./data/circles.ts";
 import { createMockEvents } from "./data/events.ts";
+import { authHandlers } from "./authHandlers.ts";
 
 const API = "/api/v1";
 const DAY_MS = 86_400_000;
@@ -126,6 +127,7 @@ async function setGoing(id: string, going: boolean): Promise<Response> {
 }
 
 export const handlers = [
+  ...authHandlers,
   http.get(`${API}/events/home`, async () => {
     await delay(400);
     return HttpResponse.json(groupForHome(events, new Date()));

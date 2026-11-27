@@ -1,4 +1,18 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from "@reduxjs/toolkit/query/react";
+import { isAuthResponse } from "../features/auth/isAuthResponse.ts";
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  RegistrationInfo,
+  SessionResponse,
+} from "../types/auth.ts";
 import type {
   CircleList,
   CircleResponse,
@@ -8,7 +22,27 @@ import type {
 import type { CircleEvent, HomeEvents } from "../types/event.ts";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
+const REQUEST_TIMEOUT_MS = 15_000;
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: API_BASE_URL,
+  credentials: "include",
+  timeout: REQUEST_TIMEOUT_MS,
+});
+
+const baseQuery: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, queryApi, extraOptions) => {
+  const result = await rawBaseQuery(args, queryApi, extraOptions);
+  if (result.error !== undefined && result.error.status === 401) {
+    void queryApi.dispatch(
+      api.util.upsertQueryData("getSession", undefined, { user: null }),
+    );
+  }
+  return result;
+};
 interface SetGoingArgs {
   id: string;
   going: boolean;
@@ -28,13 +62,76 @@ function applyMembership(circle: PublicCircle, join: boolean): void {
 
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_BASE_URL,
-    credentials: "include",
-  }),
+  baseQuery,
   refetchOnReconnect: true,
   tagTypes: ["HomeEvents", "Circles"],
   endpoints: (build) => ({
+    getSession: build.query<SessionResponse, void>({
+      async queryFn(_arg, _queryApi, _extraOptions, fetchWithBase) {
+        const result = await fetchWithBase("/auth/me");
+        if (result.error !== undefined) {
+          if (result.error.status === 401) {
+            return { data: { user: null } };
+          }
+          return { error: result.error };
+        }
+        if (!isAuthResponse(result.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "The session response was not in the expected shape.",
+            },
+          };
+        }
+        return { data: { user: result.data.user } };
+      },
+    }),
+    getRegistrationInfo: build.query<RegistrationInfo, void>({
+      query: () => "/auth/registration",
+    }),
+    register: build.mutation<AuthResponse, RegisterRequest>({
+      query: (body) => ({ url: "/auth/register", method: "POST", body }),
+      invalidatesTags: ["Circles", "HomeEvents"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          void dispatch(
+            api.util.upsertQueryData("getSession", undefined, data),
+          );
+        } catch {
+          return;
+        }
+      },
+    }),
+    login: build.mutation<AuthResponse, LoginRequest>({
+      query: (body) => ({ url: "/auth/login", method: "POST", body }),
+      invalidatesTags: ["Circles", "HomeEvents"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          void dispatch(
+            api.util.upsertQueryData("getSession", undefined, data),
+          );
+        } catch {
+          return;
+        }
+      },
+    }),
+    logout: build.mutation<null, void>({
+      query: () => ({ url: "/auth/logout", method: "POST" }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          return;
+        }
+        dispatch(api.util.resetApiState());
+        void dispatch(
+          api.util.upsertQueryData("getSession", undefined, { user: null }),
+        );
+      },
+    }),
+
     getHomeEvents: build.query<HomeEvents, void>({
       query: () => "/events/home",
       providesTags: ["HomeEvents"],
@@ -119,6 +216,11 @@ export const api = createApi({
 });
 
 export const {
+  useGetSessionQuery,
+  useGetRegistrationInfoQuery,
+  useRegisterMutation,
+  useLoginMutation,
+  useLogoutMutation,
   useGetHomeEventsQuery,
   useSetGoingMutation,
   useGetCirclesQuery,
